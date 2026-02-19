@@ -199,8 +199,8 @@ const TableEditorDialog = ({ open, onOpenChange, initialData, onConfirm }: Table
         <div className="flex flex-col h-full">
           {/* Scrollable table area */}
           <div className="flex-1 overflow-auto px-4 pb-2">
-            {/* Clip wrapper: ensures blue highlight lines don't extend beyond the table */}
-            <div className="relative overflow-hidden">
+            {/* Wrapper: w-max + overflow-x-clip so row insert line is clipped (clip avoids breaking sticky); min-w-full so table fills when narrow */}
+            <div className="relative min-w-full w-max overflow-x-clip">
               <table className="w-full border-collapse text-sm">
                 {/* ============ STICKY HEADER ============ */}
                 <thead className="sticky top-0 z-20">
@@ -216,8 +216,7 @@ const TableEditorDialog = ({ open, onOpenChange, initialData, onConfirm }: Table
 
                     {headers.map((header, col) => (
                       <th key={col} className="p-0 min-w-[140px] relative bg-background">
-                        {/* ---- Insert-column zone (between col-1 and col) ---- */}
-                        {col > 0 && (
+                        {/* ---- Insert-column zone (left edge of this column) ---- */}
                           <div
                             className="group/cins absolute -left-4 top-0 bottom-0 w-8 z-30 cursor-pointer"
                             onClick={() => insertColumnAt(col)}
@@ -240,7 +239,6 @@ const TableEditorDialog = ({ open, onOpenChange, initialData, onConfirm }: Table
                               <TooltipContent>Insert column</TooltipContent>
                             </Tooltip>
                           </div>
-                        )}
 
                         {/* Header cell — bg covers input + sort + delete */}
                         <div className="flex items-center bg-accent/50 border border-border">
@@ -270,7 +268,7 @@ const TableEditorDialog = ({ open, onOpenChange, initialData, onConfirm }: Table
                               <TooltipTrigger asChild>
                                 <button
                                   type="button"
-                                  className="flex items-center justify-center size-7 ml-1 rounded cursor-pointer opacity-40 hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
+                                  className="flex items-center justify-center size-7 mr-2 rounded cursor-pointer opacity-40 hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
                                   onClick={() => removeColumn(col)}
                                 >
                                   <TrashIcon className="size-3" />
@@ -308,7 +306,6 @@ const TableEditorDialog = ({ open, onOpenChange, initialData, onConfirm }: Table
                       <tr>
                         {/* Row number — with insert-row zone on top border */}
                         <td className="w-7 min-w-7 text-center align-middle relative">
-                          {rowIdx > 0 && (
                             <div
                               className="group/rins absolute -top-[10px] -left-1 right-0 h-5 z-10 cursor-pointer"
                               onClick={() => insertRowAt(rowIdx)}
@@ -331,7 +328,6 @@ const TableEditorDialog = ({ open, onOpenChange, initialData, onConfirm }: Table
                                 <TooltipContent>Insert row</TooltipContent>
                               </Tooltip>
                             </div>
-                          )}
                           <span className="text-xs text-muted-foreground">{rowIdx + 1}</span>
                         </td>
 
