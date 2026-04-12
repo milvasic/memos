@@ -143,6 +143,7 @@
     "unpin": "Unpin",
     "update": "Update",
     "upload": "Upload",
+    "uploading": "Uploading...",
     "user": "User",
     "username": "Username",
     "version": "Version",
@@ -187,6 +188,24 @@
       "trigger": "Record audio",
       "unsupported": "Audio recording unsupported",
       "unsupported-description": "This browser cannot record audio from the memo composer."
+    },
+    "table": {
+      "title": "Table",
+      "editor-title": "Table Editor",
+      "editor-description": "Edit table headers, rows, columns and sort data",
+      "add-row": "Add row",
+      "add-column": "Add column",
+      "insert-column": "Insert column",
+      "insert-row": "Insert row",
+      "remove-column": "Remove column",
+      "remove-row": "Remove row",
+      "sort-column": "Sort column",
+      "delete": "Delete table",
+      "delete-confirm": "Are you sure you want to delete this table? This action cannot be undone.",
+      "column": "column",
+      "columns": "columns",
+      "row": "row",
+      "rows": "rows"
     }
   },
   "inbox": {
@@ -291,6 +310,8 @@
     "failed-to-embed-memo": "Failed to embed memo",
     "fill-all": "Please fill in all fields.",
     "fill-all-required-fields": "Please fill all required fields",
+    "failed-to-delete-table": "Failed to delete table",
+    "failed-to-update-table": "Failed to update table",
     "maximum-upload-size-is": "Maximum allowed upload size is {{size}} MiB",
     "memo-not-found": "Memo not found.",
     "new-password-not-match": "New passwords do not match.",

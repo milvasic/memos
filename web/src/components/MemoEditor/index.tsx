@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
+import TableEditorDialog from "@/components/TableEditorDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import useCurrentUser from "@/hooks/useCurrentUser";
 import { memoKeys } from "@/hooks/useMemoQueries";
@@ -95,11 +96,6 @@ const MemoEditorImpl: React.FC<MemoEditorProps> = ({
     dispatch(actions.toggleFocusMode());
   };
 
-  const handleStartAudioRecording = async () => {
-    setIsAudioRecorderOpen(true);
-    await audioRecorder.startRecording();
-  };
-
   const handleAudioRecorderClick = () => {
     if (state.audioRecorder.status === "recording" || state.audioRecorder.status === "requesting_permission") {
       return;
@@ -111,6 +107,23 @@ const MemoEditorImpl: React.FC<MemoEditorProps> = ({
   const handleCancelAudioRecording = () => {
     audioRecorder.resetRecording();
     setIsAudioRecorderOpen(false);
+  };
+
+  // Table editor dialog (shared by slash command and toolbar).
+  const [tableDialogOpen, setTableDialogOpen] = useState(false);
+
+  const handleOpenTableEditor = useCallback(() => {
+    setTableDialogOpen(true);
+  }, []);
+
+  const handleTableConfirm = useCallback((markdown: string) => {
+    editorRef.current?.insertText(markdown, "\n", "\n");
+    setTableDialogOpen(false);
+    editorRef.current?.focus();
+  }, []);
+  const handleStartAudioRecording = async () => {
+    setIsAudioRecorderOpen(true);
+    await audioRecorder.startRecording();
   };
 
   useKeyboard(editorRef, handleSave);
@@ -126,7 +139,10 @@ const MemoEditorImpl: React.FC<MemoEditorProps> = ({
     dispatch(actions.setLoading("saving", true));
 
     try {
-      const result = await memoService.save(state, { memoName, parentMemoName });
+      const result = await memoService.save(state, {
+        memoName,
+        parentMemoName,
+      });
 
       if (!result.hasChanges) {
         toast.error(t("editor.no-changes-detected"));
@@ -145,12 +161,20 @@ const MemoEditorImpl: React.FC<MemoEditorProps> = ({
 
       // Ensure memo detail pages don't keep stale cached content after edits.
       if (memoName) {
-        invalidationPromises.push(queryClient.invalidateQueries({ queryKey: memoKeys.detail(memoName) }));
+        invalidationPromises.push(
+          queryClient.invalidateQueries({
+            queryKey: memoKeys.detail(memoName),
+          }),
+        );
       }
 
       // If this was a comment, also invalidate the comments query for the parent memo
       if (parentMemoName) {
-        invalidationPromises.push(queryClient.invalidateQueries({ queryKey: memoKeys.comments(parentMemoName) }));
+        invalidationPromises.push(
+          queryClient.invalidateQueries({
+            queryKey: memoKeys.comments(parentMemoName),
+          }),
+        );
       }
 
       await Promise.all(invalidationPromises);
@@ -201,7 +225,7 @@ const MemoEditorImpl: React.FC<MemoEditorProps> = ({
         )}
 
         {/* Editor content grows to fill available space in focus mode */}
-        <EditorContent ref={editorRef} placeholder={placeholder} />
+        <EditorContent ref={editorRef} placeholder={placeholder} onOpenTableEditor={handleOpenTableEditor} />
 
         {isAudioRecorderOpen && (state.audioRecorder.status === "recording" || state.audioRecorder.status === "requesting_permission") && (
           <AudioRecorderPanel
@@ -215,9 +239,17 @@ const MemoEditorImpl: React.FC<MemoEditorProps> = ({
         {/* Metadata and toolbar grouped together at bottom */}
         <div className="w-full flex flex-col gap-2">
           <EditorMetadata memoName={memoName} />
-          <EditorToolbar onSave={handleSave} onCancel={onCancel} memoName={memoName} onAudioRecorderClick={handleAudioRecorderClick} />
+          <EditorToolbar
+            onSave={handleSave}
+            onCancel={onCancel}
+            memoName={memoName}
+            onAudioRecorderClick={handleAudioRecorderClick}
+            onOpenTableEditor={handleOpenTableEditor}
+          />
         </div>
       </div>
+
+      <TableEditorDialog open={tableDialogOpen} onOpenChange={setTableDialogOpen} onConfirm={handleTableConfirm} />
     </>
   );
 };

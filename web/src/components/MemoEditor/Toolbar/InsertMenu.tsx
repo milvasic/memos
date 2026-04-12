@@ -11,6 +11,7 @@ import {
   MicIcon,
   MoreHorizontalIcon,
   PlusIcon,
+  TableIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDebounce } from "react-use";
@@ -38,7 +39,7 @@ import type { LocalFile } from "../types/attachment";
 const InsertMenu = (props: InsertMenuProps) => {
   const t = useTranslate();
   const { state, actions, dispatch } = useEditorContext();
-  const { location: initialLocation, onLocationChange, onToggleFocusMode, isUploading: isUploadingProp } = props;
+  const { location: initialLocation, onLocationChange, onToggleFocusMode, onOpenTableEditor, isUploading: isUploadingProp } = props;
 
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
@@ -58,7 +59,11 @@ const InsertMenu = (props: InsertMenuProps) => {
     currentMemoName: props.memoName,
     existingRelations: state.metadata.relations,
     onAddRelation: (relation: MemoRelation) => {
-      dispatch(actions.setMetadata({ relations: uniqBy([...state.metadata.relations, relation], (r) => r.relatedMemo?.name) }));
+      dispatch(
+        actions.setMetadata({
+          relations: uniqBy([...state.metadata.relations, relation], (r) => r.relatedMemo?.name),
+        }),
+      );
       setLinkDialogOpen(false);
     },
   });
@@ -162,6 +167,12 @@ const InsertMenu = (props: InsertMenuProps) => {
           onClick: handleFileUploadClick,
         },
         {
+          key: "table",
+          label: t("editor.table.title"),
+          icon: TableIcon,
+          onClick: () => onOpenTableEditor?.(),
+        },
+        {
           key: "link",
           label: t("editor.insert-menu.link-memo"),
           icon: LinkIcon,
@@ -173,15 +184,26 @@ const InsertMenu = (props: InsertMenuProps) => {
           icon: MapPinIcon,
           onClick: handleLocationClick,
         },
-      ] satisfies Array<{ key: string; label: string; icon: LucideIcon; onClick: () => void }>,
-    [handleFileUploadClick, handleLocationClick, handleMediaUploadClick, handleOpenLinkDialog, props, t],
+      ] satisfies Array<{
+        key: string;
+        label: string;
+        icon: LucideIcon;
+        onClick: () => void;
+      }>,
+    [handleFileUploadClick, handleLocationClick, handleMediaUploadClick, handleOpenLinkDialog, onOpenTableEditor, props, t],
   );
 
   return (
     <>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="icon" className="shadow-none" disabled={isUploading}>
+          <Button
+            variant="outline"
+            size="icon"
+            className="shadow-none"
+            disabled={isUploading}
+            aria-label={isUploading ? t("common.uploading") : t("editor.insert-menu.upload-file")}
+          >
             {isUploading ? <LoaderIcon className="size-4 animate-spin" /> : <PlusIcon className="size-4" />}
           </Button>
         </DropdownMenuTrigger>
