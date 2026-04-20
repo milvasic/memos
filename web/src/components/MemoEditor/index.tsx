@@ -9,10 +9,7 @@ import { memoKeys } from "@/hooks/useMemoQueries";
 import { userKeys } from "@/hooks/useUserQueries";
 import { handleError } from "@/lib/error";
 import { cn } from "@/lib/utils";
-import {
-  InstanceSetting_AIProviderType,
-  InstanceSetting_Key,
-} from "@/types/proto/api/v1/instance_service_pb";
+import { InstanceSetting_AIProviderType, InstanceSetting_Key } from "@/types/proto/api/v1/instance_service_pb";
 import { useTranslate } from "@/utils/i18n";
 import { convertVisibilityFromString } from "@/utils/memo";
 import {
@@ -26,20 +23,8 @@ import {
 } from "./components";
 import { FOCUS_MODE_STYLES } from "./constants";
 import type { EditorRefActions } from "./Editor";
-import {
-  useAudioRecorder,
-  useAutoSave,
-  useFocusMode,
-  useKeyboard,
-  useMemoInit,
-} from "./hooks";
-import {
-  cacheService,
-  errorService,
-  memoService,
-  transcriptionService,
-  validationService,
-} from "./services";
+import { useAudioRecorder, useAutoSave, useFocusMode, useKeyboard, useMemoInit } from "./hooks";
+import { errorService, memoService, transcriptionService, validationService } from "./services";
 import { EditorProvider, useEditorContext } from "./state";
 import type { MemoEditorProps } from "./types";
 import type { LocalFile } from "./types/attachment";
@@ -77,31 +62,18 @@ const MemoEditorImpl: React.FC<MemoEditorProps> = ({
 
   const memoName = memo?.name;
   const transcriptionProvider = useMemo(
-    () =>
-      aiSetting.providers.find(
-        (provider) =>
-          provider.apiKeySet &&
-          TRANSCRIPTION_PROVIDER_TYPES.includes(provider.type),
-      ),
+    () => aiSetting.providers.find((provider) => provider.apiKeySet && TRANSCRIPTION_PROVIDER_TYPES.includes(provider.type)),
     [aiSetting.providers],
   );
 
   // Get default visibility from user settings
-  const defaultVisibility = userGeneralSetting?.memoVisibility
-    ? convertVisibilityFromString(userGeneralSetting.memoVisibility)
-    : undefined;
+  const defaultVisibility = userGeneralSetting?.memoVisibility ? convertVisibilityFromString(userGeneralSetting.memoVisibility) : undefined;
 
-  const { isInitialized } = useMemoInit({
-    editorRef,
-    memo,
-    cacheKey,
-    username: currentUser?.name ?? "",
-    autoFocus,
-    defaultVisibility,
-  });
+  const { isInitialized } = useMemoInit({ editorRef, memo, cacheKey, username: currentUser?.name ?? "", autoFocus, defaultVisibility });
+  const isDraftCacheEnabled = !memo;
 
   // Auto-save content to localStorage
-  useAutoSave(state.content, currentUser?.name ?? "", cacheKey, isInitialized);
+  const { discardDraft } = useAutoSave(state.content, currentUser?.name ?? "", cacheKey, isInitialized && isDraftCacheEnabled);
 
   // Focus mode management with body scroll lock
   useFocusMode(state.ui.isFocusMode);
@@ -124,18 +96,8 @@ const MemoEditorImpl: React.FC<MemoEditorProps> = ({
     const cursor = editor.getCursorPosition();
     const beforeCursor = content.slice(0, cursor);
     const afterCursor = content.slice(cursor);
-    const prefix =
-      beforeCursor.length === 0 || beforeCursor.endsWith("\n\n")
-        ? ""
-        : beforeCursor.endsWith("\n")
-          ? "\n"
-          : "\n\n";
-    const suffix =
-      afterCursor.length === 0 || afterCursor.startsWith("\n\n")
-        ? ""
-        : afterCursor.startsWith("\n")
-          ? "\n"
-          : "\n\n";
+    const prefix = beforeCursor.length === 0 || beforeCursor.endsWith("\n\n") ? "" : beforeCursor.endsWith("\n") ? "\n" : "\n\n";
+    const suffix = afterCursor.length === 0 || afterCursor.startsWith("\n\n") ? "" : afterCursor.startsWith("\n") ? "\n" : "\n\n";
 
     editor.insertText(text, prefix, suffix);
     editor.scrollToCursor();
@@ -151,12 +113,7 @@ const MemoEditorImpl: React.FC<MemoEditorProps> = ({
       }
 
       try {
-        const text = (
-          await transcriptionService.transcribeFile(
-            localFile.file,
-            transcriptionProvider,
-          )
-        ).trim();
+        const text = (await transcriptionService.transcribeFile(localFile.file, transcriptionProvider)).trim();
         if (!text) {
           dispatch(actions.addLocalFile(localFile));
           toast.error(t("editor.audio-recorder.transcribe-empty"));
@@ -167,10 +124,7 @@ const MemoEditorImpl: React.FC<MemoEditorProps> = ({
         toast.success(t("editor.audio-recorder.transcribe-success"));
       } catch (error) {
         console.error(error);
-        toast.error(
-          errorService.getErrorMessage(error) ||
-            t("editor.audio-recorder.transcribe-error"),
-        );
+        toast.error(errorService.getErrorMessage(error) || t("editor.audio-recorder.transcribe-error"));
         dispatch(actions.addLocalFile(localFile));
       } finally {
         setIsTranscribingAudio(false);
@@ -182,26 +136,13 @@ const MemoEditorImpl: React.FC<MemoEditorProps> = ({
 
   const audioRecorderActions = useMemo(
     () => ({
-      setAudioRecorderSupport: (value: boolean) =>
-        dispatch(actions.setAudioRecorderSupport(value)),
-      setAudioRecorderPermission: (value: "unknown" | "granted" | "denied") =>
-        dispatch(actions.setAudioRecorderPermission(value)),
-      setAudioRecorderStatus: (
-        value:
-          | "idle"
-          | "requesting_permission"
-          | "recording"
-          | "error"
-          | "unsupported",
-      ) => dispatch(actions.setAudioRecorderStatus(value)),
-      setAudioRecorderElapsed: (value: number) =>
-        dispatch(actions.setAudioRecorderElapsed(value)),
-      setAudioRecorderError: (value?: string) =>
-        dispatch(actions.setAudioRecorderError(value)),
-      onRecordingComplete: (
-        localFile: LocalFile,
-        mode: "attach" | "transcribe",
-      ) => {
+      setAudioRecorderSupport: (value: boolean) => dispatch(actions.setAudioRecorderSupport(value)),
+      setAudioRecorderPermission: (value: "unknown" | "granted" | "denied") => dispatch(actions.setAudioRecorderPermission(value)),
+      setAudioRecorderStatus: (value: "idle" | "requesting_permission" | "recording" | "error" | "unsupported") =>
+        dispatch(actions.setAudioRecorderStatus(value)),
+      setAudioRecorderElapsed: (value: number) => dispatch(actions.setAudioRecorderElapsed(value)),
+      setAudioRecorderError: (value?: string) => dispatch(actions.setAudioRecorderError(value)),
+      onRecordingComplete: (localFile: LocalFile, mode: "attach" | "transcribe") => {
         if (mode === "transcribe") {
           void handleTranscribeRecordedAudio(localFile);
           return;
@@ -228,32 +169,18 @@ const MemoEditorImpl: React.FC<MemoEditorProps> = ({
       return;
     }
 
-    if (
-      state.audioRecorder.status === "error" ||
-      state.audioRecorder.status === "unsupported"
-    ) {
-      toast.error(
-        state.audioRecorder.error ||
-          t("editor.audio-recorder.error-description"),
-      );
+    if (state.audioRecorder.status === "error" || state.audioRecorder.status === "unsupported") {
+      toast.error(state.audioRecorder.error || t("editor.audio-recorder.error-description"));
       setIsAudioRecorderOpen(false);
     }
-  }, [
-    isAudioRecorderOpen,
-    state.audioRecorder.error,
-    state.audioRecorder.status,
-    t,
-  ]);
+  }, [isAudioRecorderOpen, state.audioRecorder.error, state.audioRecorder.status, t]);
 
   const handleToggleFocusMode = () => {
     dispatch(actions.toggleFocusMode());
   };
 
   const handleAudioRecorderClick = () => {
-    if (
-      state.audioRecorder.status === "recording" ||
-      state.audioRecorder.status === "requesting_permission"
-    ) {
+    if (state.audioRecorder.status === "recording" || state.audioRecorder.status === "requesting_permission") {
       return;
     }
 
@@ -315,8 +242,9 @@ const MemoEditorImpl: React.FC<MemoEditorProps> = ({
         return;
       }
 
-      // Clear localStorage cache on successful save
-      cacheService.clear(cacheService.key(currentUser?.name ?? "", cacheKey));
+      // Clear localStorage cache on successful save and prevent the unmount
+      // flush from writing the just-saved content back as a stale draft.
+      discardDraft();
 
       // Invalidate React Query cache to refresh memo lists across the app
       const invalidationPromises = [
@@ -364,10 +292,7 @@ const MemoEditorImpl: React.FC<MemoEditorProps> = ({
 
   return (
     <>
-      <FocusModeOverlay
-        isActive={state.ui.isFocusMode}
-        onToggle={handleToggleFocusMode}
-      />
+      <FocusModeOverlay isActive={state.ui.isFocusMode} onToggle={handleToggleFocusMode} />
 
       {/*
         Layout structure:
@@ -379,20 +304,12 @@ const MemoEditorImpl: React.FC<MemoEditorProps> = ({
         className={cn(
           "group relative w-full flex flex-col justify-between items-start bg-card px-4 pt-3 pb-1 rounded-lg border border-border gap-2",
           FOCUS_MODE_STYLES.transition,
-          state.ui.isFocusMode &&
-            cn(
-              FOCUS_MODE_STYLES.container.base,
-              FOCUS_MODE_STYLES.container.spacing,
-            ),
+          state.ui.isFocusMode && cn(FOCUS_MODE_STYLES.container.base, FOCUS_MODE_STYLES.container.spacing),
           className,
         )}
       >
         {/* Exit button is absolutely positioned in top-right corner when active */}
-        <FocusModeExitButton
-          isActive={state.ui.isFocusMode}
-          onToggle={handleToggleFocusMode}
-          title={t("editor.exit-focus-mode")}
-        />
+        <FocusModeExitButton isActive={state.ui.isFocusMode} onToggle={handleToggleFocusMode} title={t("editor.exit-focus-mode")} />
 
         {memoName && (
           <div className="w-full -mb-1">
@@ -401,16 +318,10 @@ const MemoEditorImpl: React.FC<MemoEditorProps> = ({
         )}
 
         {/* Editor content grows to fill available space in focus mode */}
-        <EditorContent
-          ref={editorRef}
-          placeholder={placeholder}
-          onOpenTableEditor={handleOpenTableEditor}
-        />
+        <EditorContent ref={editorRef} placeholder={placeholder} onOpenTableEditor={handleOpenTableEditor} />
 
         {isAudioRecorderOpen &&
-          (state.audioRecorder.status === "recording" ||
-            state.audioRecorder.status === "requesting_permission" ||
-            isTranscribingAudio) && (
+          (state.audioRecorder.status === "recording" || state.audioRecorder.status === "requesting_permission" || isTranscribingAudio) && (
             <AudioRecorderPanel
               audioRecorder={state.audioRecorder}
               mediaStream={audioRecorder.recordingStream}
@@ -435,11 +346,7 @@ const MemoEditorImpl: React.FC<MemoEditorProps> = ({
         </div>
       </div>
 
-      <TableEditorDialog
-        open={tableDialogOpen}
-        onOpenChange={setTableDialogOpen}
-        onConfirm={handleTableConfirm}
-      />
+      <TableEditorDialog open={tableDialogOpen} onOpenChange={setTableDialogOpen} onConfirm={handleTableConfirm} />
     </>
   );
 };
