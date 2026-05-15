@@ -13,6 +13,11 @@ type Driver interface {
 
 	IsInitialized(ctx context.Context) (bool, error)
 
+	// GetDatabaseSize returns the database size in bytes, or -1 if unavailable.
+	// A non-nil error indicates a hard failure; -1 with nil error means the
+	// driver cannot report a size from the underlying database.
+	GetDatabaseSize(ctx context.Context) (int64, error)
+
 	// Attachment model related methods.
 	CreateAttachment(ctx context.Context, create *Attachment) (*Attachment, error)
 	ListAttachments(ctx context.Context, find *FindAttachment) ([]*Attachment, error)
@@ -45,6 +50,7 @@ type Driver interface {
 	// UserSetting model related methods.
 	UpsertUserSetting(ctx context.Context, upsert *UserSetting) (*UserSetting, error)
 	ListUserSettings(ctx context.Context, find *FindUserSetting) ([]*UserSetting, error)
+	DeleteUserSettings(ctx context.Context, delete *DeleteUserSetting) error
 	GetUserByPATHash(ctx context.Context, tokenHash string) (*PATQueryResult, error)
 
 	// IdentityProvider model related methods.
@@ -70,4 +76,9 @@ type Driver interface {
 	ListMemoShares(ctx context.Context, find *FindMemoShare) ([]*MemoShare, error)
 	GetMemoShare(ctx context.Context, find *FindMemoShare) (*MemoShare, error)
 	DeleteMemoShare(ctx context.Context, delete *DeleteMemoShare) error
+
+	// UserIdentity model related methods.
+	CreateUserIdentity(ctx context.Context, create *UserIdentity) (*UserIdentity, error)
+	ListUserIdentities(ctx context.Context, find *FindUserIdentity) ([]*UserIdentity, error)
+	DeleteUserIdentities(ctx context.Context, delete *DeleteUserIdentity) error
 }

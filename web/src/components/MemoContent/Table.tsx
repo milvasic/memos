@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useTranslate } from "@/utils/i18n";
 import type { TableData } from "@/utils/markdown-table";
 import { findAllTables, parseMarkdownTable, replaceNthTable } from "@/utils/markdown-table";
+import { NestedMarkdownRenderContext } from "./MarkdownRenderContext";
 import type { ReactMarkdownProps } from "./markdown/types";
 
 // ---------------------------------------------------------------------------
@@ -237,7 +238,7 @@ interface TableHeaderCellProps extends React.ThHTMLAttributes<HTMLTableCellEleme
 export const TableHeaderCell = ({ children, className, node: _node, ...props }: TableHeaderCellProps) => {
   return (
     <th className={cn("px-2 py-1 text-left align-middle text-sm font-medium text-muted-foreground", className)} {...props}>
-      {children}
+      <NestedMarkdownRenderContext>{children}</NestedMarkdownRenderContext>
     </th>
   );
 };
@@ -249,7 +250,7 @@ interface TableCellProps extends React.TdHTMLAttributes<HTMLTableCellElement>, R
 export const TableCell = ({ children, className, node: _node, ...props }: TableCellProps) => {
   return (
     <td className={cn("px-2 py-1 text-left align-middle text-sm", className)} {...props}>
-      {children}
+      <NestedMarkdownRenderContext>{children}</NestedMarkdownRenderContext>
     </td>
   );
 };

@@ -5,7 +5,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tansta
 import { memoServiceClient } from "@/connect";
 import { userKeys } from "@/hooks/useUserQueries";
 import type { ListMemosRequest, ListMemosResponse, Memo } from "@/types/proto/api/v1/memo_service_pb";
-import { ListMemosRequestSchema, MemoSchema } from "@/types/proto/api/v1/memo_service_pb";
+import { ListMemoCommentsRequestSchema, ListMemosRequestSchema, MemoSchema } from "@/types/proto/api/v1/memo_service_pb";
 
 // Query keys factory for consistent cache management
 export const memoKeys = {
@@ -15,6 +15,7 @@ export const memoKeys = {
   details: () => [...memoKeys.all, "detail"] as const,
   detail: (name: string) => [...memoKeys.details(), name] as const,
   comments: (name: string) => [...memoKeys.all, "comments", name] as const,
+  linkMetadata: (url: string) => [...memoKeys.all, "linkMetadata", url] as const,
 };
 
 type MemoPatch = Partial<Memo> & Pick<Memo, "name">;
@@ -149,6 +150,30 @@ export function useMemo(name: string, options?: { enabled?: boolean }) {
   });
 }
 
+function isHTTPURL(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+export function useLinkMetadata(url: string, options?: { enabled?: boolean }) {
+  const trimmedUrl = url.trim();
+
+  return useQuery({
+    queryKey: memoKeys.linkMetadata(trimmedUrl),
+    queryFn: async () => {
+      const metadata = await memoServiceClient.getLinkMetadata({ url: trimmedUrl });
+      return metadata;
+    },
+    enabled: (options?.enabled ?? true) && isHTTPURL(trimmedUrl),
+    staleTime: 1000 * 60 * 60 * 24,
+    gcTime: 1000 * 60 * 60 * 24,
+  });
+}
+
 export function useCreateMemo() {
   const queryClient = useQueryClient();
 
@@ -243,11 +268,16 @@ export function useDeleteMemo() {
   });
 }
 
-export function useMemoComments(name: string, options?: { enabled?: boolean }) {
+export function useMemoComments(name: string, options?: { enabled?: boolean; pageSize?: number }) {
   return useQuery({
-    queryKey: memoKeys.comments(name),
+    queryKey: [...memoKeys.comments(name), options?.pageSize ?? 0],
     queryFn: async () => {
-      const response = await memoServiceClient.listMemoComments({ name });
+      const response = await memoServiceClient.listMemoComments(
+        create(ListMemoCommentsRequestSchema, {
+          name,
+          pageSize: options?.pageSize ?? 0,
+        }),
+      );
       return response;
     },
     enabled: options?.enabled ?? true,
